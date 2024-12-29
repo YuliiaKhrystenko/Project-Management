@@ -4,12 +4,16 @@
     <button @click="openModal" v-if="project">Add Task</button>
 
     <div v-if="project">
-      <!-- Таблиця завдань -->
       <table class="task-table">
         <thead>
           <tr>
-            <th v-for="column in columns" :key="column.field" @click="sortBy(column.field)" class="resizable"
-              :style="{ width: column.width + 'px' }">
+            <th 
+              v-for="column in columns" 
+              :key="column.field" 
+              @click="sortBy(column.field)"
+              :style="{ width: column.width + 'px' }" 
+              class="resizable-header"
+            >
               <span>{{ column.label }}</span>
               <span class="sort-indicator">
                 {{ sortField === column.field ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
@@ -29,13 +33,16 @@
         </tbody>
       </table>
 
-      <!-- Секції завдань -->
       <div class="task-board">
         <div v-for="status in taskStatuses" :key="status" class="task-section">
           <h2>{{ status }}</h2>
           <div class="task-list" @dragover.prevent @drop="onDropToSection(status)">
-            <div v-for="task in tasksByStatus[status]" :key="task.id" class="task" draggable="true"
-              @dragstart="onDragStart(task)">
+            <div 
+              v-for="task in tasksByStatus[status]" 
+              :key="task.id" class="task" 
+              draggable="true"
+              @dragstart="onDragStart(task)"
+            >
               <span>{{ task.name }}</span>
               <span>{{ getUserName(task.assignee) }}</span>
               <span>{{ task.dueDate }}</span>
@@ -47,8 +54,17 @@
 
     <p v-else>Loading project details...</p>
 
-    <!-- Модальне вікно -->
-    <Modal v-if="isModalOpen" :modalType="'task'" :closeModal="closeModal" :onSubmit="addTask" :users="users" />
+    <Modal 
+      v-if="isModalOpen" 
+      :modalType="'task'" 
+      :closeModal="closeModal" 
+      :onSubmit="addTask" 
+      :users="users"
+      :existingProjects="[]" 
+      :existingTasks="tasksStore.tasks" 
+      :currentProjectId="projectId" 
+    />
+
   </div>
 </template>
 
@@ -57,9 +73,9 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useTasksStore } from '@/stores/tasks';
 import { getProjects } from '@/services/projectService';
-import type { TaskStatus } from '@/types/types';
 import { type Task } from '@/types/Task';
 import { type Project } from '@/types/Project';
+import type { TaskStatus } from '@/types/types';
 import Modal from '@/components/Modal.vue';
 
 const route = useRoute();
@@ -72,20 +88,18 @@ const draggedTask = ref<Task | null>(null);
 
 const taskStatuses: TaskStatus[] = ['To Do', 'In Progress', 'Done'];
 
+const sortField = ref<string | null>(null);
+const sortOrder = ref<'asc' | 'desc'>('asc');
 const filters = ref({
   assignee: '',
   status: '',
 });
-const sortField = ref<string | null>(null);
-const sortOrder = ref<'asc' | 'desc'>('asc');
-
 const tasksByStatus = computed(() =>
   taskStatuses.reduce((acc, status) => {
     acc[status] = tasksStore.tasks.filter((task) => task.status === status && task.projectId === projectId);
     return acc;
   }, {} as Record<string, Task[]>)
 );
-
 const filteredTasks = computed(() => {
   return tasksStore.tasks.filter(
     (task) =>
@@ -94,12 +108,33 @@ const filteredTasks = computed(() => {
   );
 });
 
+function sortBy(field: string) {
+  if (sortField.value === field) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortField.value = field as keyof Task;
+    sortOrder.value = 'asc';
+  }
+}
+
+function openModal() {
+  isModalOpen.value = true;
+}
+
+function closeModal() {
+  isModalOpen.value = false;
+}
+
+async function addTask(newTask: Partial<Task>) {
+  const newId = tasksStore.tasks.length + 1;
+  await tasksStore.addTask({ ...newTask, id: newId, projectId } as Task);
+}
+
 const users = ref([
   { id: 1, name: 'John Doe' },
   { id: 2, name: 'Jane Smith' },
 ]);
 
-// Стан для сортування, фільтрації та зміни ширини колонок
 const columns = ref([
   { label: 'ID', field: 'id', width: 100 },
   { label: 'Назва', field: 'name', width: 200 },
@@ -111,7 +146,6 @@ const columns = ref([
 const resizingColumn = ref<any>(null);
 const startX = ref(0);
 
-// Логіка для зміни ширини колонок
 function startResize(event: MouseEvent, column: any) {
   resizingColumn.value = column;
   startX.value = event.clientX;
@@ -131,19 +165,6 @@ function stopResize() {
   resizingColumn.value = null;
 }
 
-function openModal() {
-  isModalOpen.value = true;
-}
-
-function closeModal() {
-  isModalOpen.value = false;
-}
-
-async function addTask(newTask: Partial<Task>) {
-  const newId = tasksStore.tasks.length + 1;
-  await tasksStore.addTask({ ...newTask, id: newId, projectId } as Task);
-}
-
 function onDragStart(task: Task) {
   draggedTask.value = task;
 }
@@ -153,18 +174,6 @@ async function onDropToSection(newStatus: TaskStatus) {
     await tasksStore.updateTask(draggedTask.value.id, { status: newStatus });
     draggedTask.value = null;
   }
-}
-function sortBy(field: string) {
-  if (sortField.value === field) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortField.value = field as keyof Task;  // Cast to keyof Task
-    sortOrder.value = 'asc';
-  }
-}
-
-function sortTasks(field: keyof Task) {
-  tasksStore.sortTasks(field);
 }
 
 function getUserName(userId: number | string) {
@@ -185,7 +194,6 @@ onMounted(async () => {
     console.log('Project not found');
   }
 });
-
 </script>
 
 <style scoped>
@@ -245,5 +253,10 @@ onMounted(async () => {
   width: 5px;
   height: 100%;
   cursor: ew-resize;
+}
+
+.resizable-header {
+  cursor: pointer;
+  user-select: none;
 }
 </style>

@@ -4,13 +4,18 @@
             <h2>{{ modalType === 'project' ? 'Add New Project' : 'Add New Task' }}</h2>
             <form @submit.prevent="submitForm">
 
-                <div class="form-group" v-if="modalType === 'project' || modalType === 'task'">
+                <div class="form-group">
                     <label for="name">
                         {{ modalType === 'project' ? 'Project Name' : 'Task Name' }}
                         <span class="required">*</span>
                     </label>
-                    <input type="text" id="name" v-model="formData.name"
-                        :placeholder="modalType === 'project' ? 'Enter project name' : 'Enter task name'" required />
+                    <input 
+                        type="text" 
+                        id="name" 
+                        v-model="formData.name"
+                        :placeholder="modalType === 'project' ? 'Enter project name' : 'Enter task name'" 
+                        required 
+                    />
                 </div>
 
                 <div class="form-group" v-if="modalType === 'project'">
@@ -51,23 +56,46 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 const props = defineProps<{
     closeModal: () => void;
     modalType: 'project' | 'task';
     onSubmit: (data: any) => void;
-    users?: { id: number; name: string }[];
+    existingProjects: { id: number; name: string; }[];
+    existingTasks: { id: number; name: string; projectId: number; }[];
+    users?: { id: number; name: string; }[];
+    currentProjectId?: number;
 }>();
 
-const formData = ref({
-    name: '',
-    description: '',
-    assignee: null,
-    status: props.modalType === 'project' ? 'Active' : 'To Do',
-    deadline: '',
-    createdAt: props.modalType === 'project' ? new Date().toISOString() : '',
-});
+const formData = ref<any>({});
+
+watch(
+    () => props.modalType,
+    (newType) => {
+        formData.value = newType === 'project'
+            ? {
+                name: '',
+                description: '',
+                tasksCount: 0,
+                status: 'Active',
+                createdAt: new Date().toISOString(),
+            }
+            : {
+                name: '',
+                assignee: null,
+                status: 'To Do',
+                deadline: '',
+                projectId: props.currentProjectId || null,
+            };
+    },
+    { immediate: true }
+);
+
+const generateUniqueId = (existing: { id: number }[]) => {
+    if (!existing || existing.length === 0) return 1;
+    return Math.max(...existing.map((item) => item.id)) + 1;
+};
 
 const isFormValid = computed(() => {
     if (props.modalType === 'project') {
@@ -77,14 +105,37 @@ const isFormValid = computed(() => {
         return (
             formData.value.name.trim() !== '' &&
             formData.value.status &&
-            formData.value.deadline
+            formData.value.deadline &&
+            formData.value.projectId
         );
     }
     return false;
 });
 
 function submitForm() {
-    props.onSubmit(formData.value);
+    const newId = generateUniqueId(
+        props.modalType === 'project' ? props.existingProjects : props.existingTasks
+    );
+
+    const cleanedData = props.modalType === 'project'
+        ? {
+            id: newId,
+            name: formData.value.name,
+            description: formData.value.description,
+            tasksCount: formData.value.tasksCount,
+            status: formData.value.status,
+            createdAt: formData.value.createdAt,
+        }
+        : {
+            id: newId,
+            name: formData.value.name,
+            assignee: formData.value.assignee,
+            status: formData.value.status,
+            dueDate: formData.value.deadline,
+            projectId: formData.value.projectId,
+        };
+
+    props.onSubmit(cleanedData);
     props.closeModal();
 }
 </script>
@@ -130,7 +181,8 @@ label {
 }
 
 input,
-textarea {
+textarea,
+select {
     width: 100%;
     padding: 8px;
     border: 1px solid #ccc;

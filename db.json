@@ -3,32 +3,17 @@
     {
       "id": "1",
       "name": "Project Alpha",
-      "tasksCount": 5,
+      "tasksCount": 0,
       "status": "Active",
       "createdAt": "2023-01-01"
     },
     {
       "id": "2",
       "name": "Project Beta",
-      "tasksCount": 3,
+      "tasksCount": 0,
       "status": "Completed",
       "createdAt": "2023-01-01"
     }
   ],
-  "tasks": [
-    {
-      "id": "1",
-      "name": "Task 1",
-      "projectId": 1,
-      "status": "Done",
-      "dueDate": "2023-01-10"
-    },
-    {
-      "id": "2",
-      "name": "Task 2",
-      "projectId": 1,
-      "status": "Done",
-      "dueDate": "2023-01-10"
-    }
-  ]
+  "tasks": []
 }

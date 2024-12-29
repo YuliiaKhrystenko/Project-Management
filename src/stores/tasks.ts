@@ -20,12 +20,8 @@ export const useTasksStore = defineStore('tasks', {
       }
     },
 
-    saveToLocalStorage() {
-      localStorage.setItem('tasks', JSON.stringify(this.tasks))
-    },
-
     saveTasks() {
-      this.saveToLocalStorage()
+      localStorage.setItem('tasks', JSON.stringify(this.tasks))
     },
 
     async fetchTasks(projectId: number) {
@@ -37,10 +33,9 @@ export const useTasksStore = defineStore('tasks', {
       }
     },
 
-    async addTask(newTask: Omit<Task, 'id'>) {
+    async addTask(newTask: Task) {
       try {
-        const task = await createTask(newTask)
-        this.tasks.push(task)
+        this.tasks.push(newTask)
         this.saveTasks()
       } catch (error) {
         console.error('Failed to add task', error)
@@ -49,10 +44,10 @@ export const useTasksStore = defineStore('tasks', {
 
     async updateTask(id: number, updatedFields: Partial<Task>) {
       try {
-        const updatedTask = await updateTask(id, updatedFields)
-        this.tasks = this.tasks.map((task) =>
-          task.id === id ? { ...task, ...updatedFields } : task,
-        )
+        const taskIndex = this.tasks.findIndex((task) => task.id === id)
+        if (taskIndex === -1) throw new Error('Task not found')
+
+        this.tasks[taskIndex] = { ...this.tasks[taskIndex], ...updatedFields }
         this.saveTasks()
       } catch (error) {
         console.error('Failed to update task', error)

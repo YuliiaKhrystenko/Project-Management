@@ -21,8 +21,13 @@
       <table>
         <thead>
           <tr>
-            <th v-for="column in columns" :key="column.field" @click="sortBy(column.field)"
-              :style="{ width: column.width + 'px' }" class="resizable-header">
+            <th 
+              v-for="column in columns" 
+              :key="column.field" 
+              @click="sortBy(column.field)"
+              :style="{ width: column.width + 'px' }"
+              class="resizable-header"
+            >
               <span>{{ column.label }}</span>
               <span class="sort-indicator">
                 {{ sortField === column.field ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
@@ -31,6 +36,7 @@
             </th>
           </tr>
         </thead>
+
         <tbody>
           <tr v-for="project in filteredAndSortedProjects" :key="project.id" @click="goToProjectDetails(project.id)">
             <td>{{ project.id }}</td>
@@ -42,7 +48,16 @@
         </tbody>
       </table>
     </div>
-    <Modal v-if="isModalOpen" :modalType="'project'" :closeModal="closeModal" :onSubmit="addProject" />
+
+    <Modal 
+      v-if="isModalOpen" 
+      :modalType="'project'" 
+      :closeModal="closeModal" 
+      :onSubmit="addProject"
+      :existingProjects="existingProjects" 
+      :existingTasks="existingTasks"
+    />
+    
   </div>
 </template>
 
@@ -50,12 +65,14 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useProjectsStore } from '@/stores/projects';
+import { useTasksStore } from '@/stores/tasks';
 import type { ProjectStatus } from '@/types/types';
 import { type Project } from '@/types/Project';
 import Modal from '@/components/Modal.vue';
 
 const router = useRouter();
 const projectsStore = useProjectsStore();
+const tasksStore = useTasksStore();
 
 const filters = ref({ name: '', status: '' });
 const sortField = ref<string | null>(null);
@@ -67,8 +84,24 @@ const startX = ref(0);
 
 const projectStatuses: ProjectStatus[] = ['Active', 'Completed'];
 
+const existingProjects = computed(() => projectsStore.projects);
+const existingTasks = computed(() => tasksStore.tasks);
+
+const projectsWithTaskCounts = computed(() => {
+  const tasks = tasksStore.tasks;
+
+  return projectsStore.projects.map((project) => {
+    const taskCount = tasks.filter((task) => task.projectId === project.id).length;
+    return {
+      ...project,
+      tasksCount: taskCount,
+    };
+  });
+});
+
 onMounted(() => {
   projectsStore.fetchProjects();
+  tasksStore.loadFromLocalStorage();
 });
 
 function openModal() {
@@ -77,7 +110,6 @@ function openModal() {
 function closeModal() {
   isModalOpen.value = false;
 }
-
 function addProject(newProject: Project) {
   projectsStore.addProject(newProject);
 }
@@ -91,7 +123,7 @@ const columns = ref([
 ]);
 
 const filteredAndSortedProjects = computed(() => {
-  let projects = [...projectsStore.projects];
+  let projects = [...projectsWithTaskCounts.value];
 
   if (filters.value.name) {
     projects = projects.filter((project) =>
@@ -151,7 +183,6 @@ function stopResize() {
   document.removeEventListener('mouseup', stopResize);
   resizingColumn.value = null;
 }
-
 </script>
 
 <style scoped>

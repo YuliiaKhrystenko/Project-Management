@@ -20,12 +20,8 @@ export const useProjectsStore = defineStore('projects', {
       }
     },
 
-    saveToLocalStorage() {
-      localStorage.setItem('projects', JSON.stringify(this.projects))
-    },
-
     saveProjects() {
-      this.saveToLocalStorage()
+      localStorage.setItem('projects', JSON.stringify(this.projects))
     },
 
     async fetchProjects() {
