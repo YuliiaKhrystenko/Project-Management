@@ -1,9 +1,11 @@
 <template>
   <div class="projects-page">
-    <h1>Projects</h1>
+    <div class="header">
+      <h1 class="title">Projects</h1>
+      <button @click="openModal" class="add-button">Add Project</button>
+    </div>
 
     <div class="controls">
-      <div class="controls-filetrs">
         <input type="text" v-model="filters.name" placeholder="Search by name" class="search-input" />
         <select v-model="filters.status" class="status-select">
           <option value="">All Statuses</option>
@@ -11,10 +13,6 @@
             {{ status }}
           </option>
         </select>
-      </div>
-      <div class="controls-addBtn">
-        <button @click="openModal" class="add-button">Add Project</button>
-      </div>
     </div>
 
     <div class="table-container">
@@ -188,12 +186,24 @@ function stopResize() {
 <style scoped>
 .projects-page {
   padding: 16px;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .title {
+    font-size: 32px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
 }
 
 .controls {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
   margin-bottom: 16px;
 }
 

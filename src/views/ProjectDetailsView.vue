@@ -1,7 +1,9 @@
 <template>
   <div class="project-page">
-    <h1>Project: {{ project?.name || 'Loading...' }}</h1>
-    <button @click="openModal" v-if="project">Add Task</button>
+    <div class="header">
+      <h1 class="title">Project: {{ project?.name || 'Loading...' }}</h1>
+      <button @click="openModal" v-if="project" class="add-button">Add Task</button>
+    </div>
 
     <div v-if="project">
       <table class="task-table">
@@ -35,7 +37,7 @@
 
       <div class="task-board">
         <div v-for="status in taskStatuses" :key="status" class="task-section">
-          <h2>{{ status }}</h2>
+          <h2 class="task-status">{{ status }}</h2>
           <div class="task-list" @dragover.prevent @drop="onDropToSection(status)">
             <div 
               v-for="task in tasksByStatus[status]" 
@@ -197,49 +199,79 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.task-board {
-  display: flex;
-  gap: 16px;
-}
+.project-page {
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .add-button {
+    background: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+  }
 
-.task-section {
-  flex: 1;
-  background: #f9f9f9;
-  padding: 16px;
-  border: 1px solid #ddd;
-}
+  .add-button:hover {
+    background: #218838;
+  }
 
-.task-list {
-  min-height: 100px;
-}
+  .task-board {
+    display: flex;
+    gap: 16px;
 
-.task {
-  display: flex;
-  gap: 8px;
-  padding: 8px;
-  background: #fff;
-  border: 1px solid #ddd;
-  margin-bottom: 8px;
-  cursor: move;
-}
+    .task-section {
+      flex: 1;
+      background: #f9f9f9;
+      padding: 16px;
+      border: 1px solid #ddd;
+    }   
+    .task-status {
+      text-align: center;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #ddd; 
+      font-size: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #1e293b;
+    }
+  }
+  
+  .task-list {
+    min-height: 100px;
+  }
 
-.task-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 16px;
-}
+  .task {
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    background: #fff;
+    border: 1px solid #ddd;
+    margin-bottom: 8px;
+    cursor: move;
+  }
 
-.task-table th,
-.task-table td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
+  .task-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+  }
 
-.task-table th {
-  cursor: pointer;
-  background: #f1f1f1;
-  position: relative;
+  .task-table th,
+  .task-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+
+  .task-table th {
+    cursor: pointer;
+    background: #f1f1f1;
+    position: relative;
+  }
 }
 
 .sort-indicator {
