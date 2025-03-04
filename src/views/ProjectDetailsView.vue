@@ -1,19 +1,20 @@
 <template>
   <div class="project-page">
     <div class="header">
-      <h1 class="title">Project: {{ project?.name || 'Loading...' }}</h1>
-      <button @click="openModal" v-if="project" class="add-button">Add Task</button>
+      <router-link to="/" class="back-button">⬅ Back</router-link>
+      <h1 class="title">{{ project?.name || 'Loading...' }}</h1>
+      <button @click="openModal" v-if="project" class="add-button">+ Add New Task</button>
     </div>
 
     <div v-if="project">
       <table class="task-table">
         <thead>
           <tr>
-            <th 
-              v-for="column in columns" 
-              :key="column.field" 
+            <th
+              v-for="column in columns"
+              :key="column.field"
               @click="sortBy(column.field)"
-              :style="{ width: column.width + 'px' }" 
+              :style="{ width: column.width + 'px' }"
               class="resizable-header"
             >
               <span>{{ column.label }}</span>
@@ -39,9 +40,9 @@
         <div v-for="status in taskStatuses" :key="status" class="task-section">
           <h2 class="task-status">{{ status }}</h2>
           <div class="task-list" @dragover.prevent @drop="onDropToSection(status)">
-            <div 
-              v-for="task in tasksByStatus[status]" 
-              :key="task.id" class="task" 
+            <div
+              v-for="task in tasksByStatus[status]"
+              :key="task.id" class="task"
               draggable="true"
               @dragstart="onDragStart(task)"
             >
@@ -56,15 +57,15 @@
 
     <p v-else>Loading project details...</p>
 
-    <Modal 
-      v-if="isModalOpen" 
-      :modalType="'task'" 
-      :closeModal="closeModal" 
-      :onSubmit="addTask" 
+    <Modal
+      v-if="isModalOpen"
+      :modalType="'task'"
+      :closeModal="closeModal"
+      :onSubmit="addTask"
       :users="users"
-      :existingProjects="[]" 
-      :existingTasks="tasksStore.tasks" 
-      :currentProjectId="projectId" 
+      :existingProjects="[]"
+      :existingTasks="tasksStore.tasks"
+      :currentProjectId="projectId"
     />
 
   </div>
@@ -205,18 +206,19 @@ onMounted(async () => {
     justify-content: space-between;
     align-items: center;
   }
-  
+
   .add-button {
-    background: #28a745;
+    background: #635FC7;
     color: #fff;
     border: none;
-    border-radius: 4px;
-    padding: 8px 16px;
+    border-radius: 5px;
+    padding: 10px 15px;
+    font-size: 16px;
     cursor: pointer;
   }
 
   .add-button:hover {
-    background: #218838;
+    background: #A8A4FF;
   }
 
   .task-board {
@@ -228,18 +230,18 @@ onMounted(async () => {
       background: #f9f9f9;
       padding: 16px;
       border: 1px solid #ddd;
-    }   
+    }
     .task-status {
       text-align: center;
       padding-bottom: 8px;
-      border-bottom: 1px solid #ddd; 
+      border-bottom: 1px solid #ddd;
       font-size: 16px;
       text-transform: uppercase;
       letter-spacing: 1px;
       color: #1e293b;
     }
   }
-  
+
   .task-list {
     min-height: 100px;
   }
@@ -290,5 +292,17 @@ onMounted(async () => {
 .resizable-header {
   cursor: pointer;
   user-select: none;
+}
+.back-button {
+  display: inline-block;
+  background: #3498db;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 5px;
+  text-decoration: none;
+}
+
+.back-button:hover {
+  background: #2980b9;
 }
 </style>

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { type Project } from '@/types/Project'
 import { getProjects, createProject, updateProject, deleteProject } from '@/services/projectService'
+import { POSITION, useToast } from 'vue-toastification'
 
 export const useProjectsStore = defineStore('projects', {
   state: () => ({
@@ -34,12 +35,21 @@ export const useProjectsStore = defineStore('projects', {
     },
 
     async addProject(newProject: Project) {
+      const toast = useToast()
       try {
         const project = await createProject(newProject)
         this.projects.push(project)
         this.saveProjects()
+        toast.success('Проект успішно додано!', {
+          timeout: 3000,
+          position: POSITION.TOP_LEFT,
+        })
       } catch (error) {
         console.error('Failed to add project', error)
+        toast.error('Не вдалося додати проект. Спробуйте ще раз.', {
+          timeout: 3000,
+          position: POSITION.TOP_LEFT,
+        })
       }
     },
 
@@ -55,13 +65,22 @@ export const useProjectsStore = defineStore('projects', {
       }
     },
 
-    async deleteProject(id: number) {
+    async removeProject(id: number) {
+      const toast = useToast()
       try {
         await deleteProject(id)
         this.projects = this.projects.filter((project) => project.id !== id)
         this.saveProjects()
+        toast.success('Проект успішно видалено!', {
+          timeout: 3000,
+          position: POSITION.TOP_LEFT,
+        })
       } catch (error) {
         console.error('Failed to delete project', error)
+        toast.error('Не вдалося видалити проект. Спробуйте ще раз.', {
+          timeout: 3000,
+          position: POSITION.TOP_LEFT,
+        })
       }
     },
   },

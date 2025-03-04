@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { type Task } from '@/types/Task'
 import { getTasksByProject, createTask, updateTask, deleteTask } from '@/services/taskService'
+import { POSITION, useToast } from 'vue-toastification'
 
 export const useTasksStore = defineStore('tasks', {
   state: () => ({
@@ -34,11 +35,20 @@ export const useTasksStore = defineStore('tasks', {
     },
 
     async addTask(newTask: Task) {
+      const toast = useToast()
       try {
         this.tasks.push(newTask)
         this.saveTasks()
+        toast.success('Завдання успішно додано!', {
+          timeout: 3000,
+          position: POSITION.TOP_LEFT,
+        })
       } catch (error) {
         console.error('Failed to add task', error)
+        toast.error('Не вдалося додати завдання. Спробуйте ще раз.', {
+          timeout: 3000,
+          position: POSITION.TOP_LEFT,
+        })
       }
     },
 
@@ -55,12 +65,21 @@ export const useTasksStore = defineStore('tasks', {
     },
 
     async deleteTask(id: number) {
+      const toast = useToast()
       try {
         await deleteTask(id)
         this.tasks = this.tasks.filter((task) => task.id !== id)
         this.saveTasks()
+        toast.success('Завдання успішно видалено!', {
+          timeout: 3000,
+          position: POSITION.TOP_LEFT,
+        })
       } catch (error) {
         console.error('Failed to delete task', error)
+        toast.error('Не вдалося видалити завдання. Спробуйте ще раз.', {
+          timeout: 3000,
+          position: POSITION.TOP_LEFT,
+        })
       }
     },
 

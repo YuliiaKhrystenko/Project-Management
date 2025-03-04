@@ -2,30 +2,26 @@
   <div class="projects-page">
     <div class="header">
       <h1 class="title">Projects</h1>
-      <button @click="openModal" class="add-button">Add Project</button>
+      <button @click="openModal" class="add-button">+ Add New Project</button>
     </div>
 
     <div class="controls">
-        <input type="text" v-model="filters.name" placeholder="Search by name" class="search-input" />
-        <select v-model="filters.status" class="status-select">
-          <option value="">All Statuses</option>
-          <option v-for="status in projectStatuses" :key="status" :value="status">
-            {{ status }}
-          </option>
-        </select>
+      <input type="text" v-model="filters.name" placeholder="Search by name..." class="search-input" />
+      <select v-model="filters.status" class="status-select">
+        <option value="">All Statuses</option>
+        <option v-for="status in projectStatuses" :key="status" :value="status">
+          {{ status }}
+        </option>
+      </select>
     </div>
 
     <div class="table-container">
       <table>
         <thead>
           <tr>
-            <th 
-              v-for="column in columns" 
-              :key="column.field" 
-              @click="sortBy(column.field)"
-              :style="{ width: column.width + 'px' }"
-              class="resizable-header"
-            >
+            <th v-for="column in columns" :key="column.field" @click="sortBy(column.field)"
+              @mouseover="hoveredColumn = column.field" @mouseleave="hoveredColumn = null"
+              :title="getTooltip(column.field)" :style="{ width: column.width + 'px' }" class="resizable-header">
               <span>{{ column.label }}</span>
               <span class="sort-indicator">
                 {{ sortField === column.field ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
@@ -42,20 +38,17 @@
             <td>{{ project.tasksCount }}</td>
             <td>{{ project.status }}</td>
             <td>{{ formatDate(project.createdAt) }}</td>
+            <td>
+              <button @click.stop="confirmDeleteProject(project.id)" class="delete-button">Delete</button>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <Modal 
-      v-if="isModalOpen" 
-      :modalType="'project'" 
-      :closeModal="closeModal" 
-      :onSubmit="addProject"
-      :existingProjects="existingProjects" 
-      :existingTasks="existingTasks"
-    />
-    
+    <Modal v-if="isModalOpen" :modalType="'project'" :closeModal="closeModal" :onSubmit="addProject"
+      :existingProjects="existingProjects" :existingTasks="existingTasks" />
+
   </div>
 </template>
 
@@ -79,6 +72,7 @@ const isModalOpen = ref(false);
 
 const resizingColumn = ref<any>(null);
 const startX = ref(0);
+const hoveredColumn = ref<string | null>(null);
 
 const projectStatuses: ProjectStatus[] = ['Active', 'Completed'];
 
@@ -102,6 +96,16 @@ onMounted(() => {
   tasksStore.loadFromLocalStorage();
 });
 
+function confirmDeleteProject(projectId: number) {
+  if (confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+    deleteProject(projectId);
+  }
+}
+
+async function deleteProject(projectId: number) {
+  await projectsStore.removeProject(projectId);
+}
+
 function openModal() {
   isModalOpen.value = true;
 }
@@ -112,12 +116,22 @@ function addProject(newProject: Project) {
   projectsStore.addProject(newProject);
 }
 
+function getTooltip(field: string): string {
+  if (sortField.value === field) {
+    return sortOrder.value === 'asc'
+      ? `Click to sort by ${field} descending`
+      : `Click to reset sorting`;
+  }
+  return `Click to sort by ${field} ascending`;
+}
+
 const columns = ref([
   { label: 'ID', field: 'id', width: 100 },
   { label: 'Name', field: 'name', width: 200 },
   { label: 'Tasks Count', field: 'tasksCount', width: 150 },
   { label: 'Status', field: 'status', width: 150 },
   { label: 'Created At', field: 'createdAt', width: 200 },
+  { label: 'Actions', field: 'actions', width: 100 },
 ]);
 
 const filteredAndSortedProjects = computed(() => {
@@ -148,12 +162,18 @@ const filteredAndSortedProjects = computed(() => {
 
 function sortBy(field: string) {
   if (sortField.value === field) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+    if (sortOrder.value === 'asc') {
+      sortOrder.value = 'desc';
+    } else if (sortOrder.value === 'desc') {
+      sortField.value = null;
+      sortOrder.value = 'asc';
+    }
   } else {
     sortField.value = field;
     sortOrder.value = 'asc';
   }
 }
+
 
 function goToProjectDetails(projectId: number) {
   router.push({ name: 'ProjectDetails', params: { id: projectId } });
@@ -226,8 +246,12 @@ th,
 td {
   border: 1px solid #ccc;
   padding: 8px;
-  text-align: left;
   position: relative;
+  cursor: pointer;
+}
+
+th {
+  text-align: center;
 }
 
 .resizable-header {
@@ -245,15 +269,31 @@ td {
 }
 
 .add-button {
-  background: #28a745;
+  background: #635FC7;
   color: #fff;
   border: none;
   border-radius: 4px;
-  padding: 8px 16px;
+  padding: 10px 15px;
+  font-size: 16px;
   cursor: pointer;
 }
 
 .add-button:hover {
-  background: #218838;
+  background: #A8A4FF;
+}
+
+.delete-button {
+  width: 100%;
+  background: #EA5555;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: none;
+  font-size: 12px;
+}
+
+.delete-button:hover {
+  background: #c0392b;
 }
 </style>
