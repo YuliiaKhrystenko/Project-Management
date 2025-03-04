@@ -1,19 +1,4 @@
 {
-  "projects": [
-    {
-      "id": "1",
-      "name": "Project Alpha",
-      "tasksCount": 0,
-      "status": "Active",
-      "createdAt": "2023-01-01"
-    },
-    {
-      "id": "2",
-      "name": "Project Beta",
-      "tasksCount": 0,
-      "status": "Completed",
-      "createdAt": "2023-01-01"
-    }
-  ],
+  "projects": [],
   "tasks": []
 }

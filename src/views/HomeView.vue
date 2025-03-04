@@ -8,10 +8,13 @@
     <ProjectFilters v-model:filters="filters" />
 
     <ProjectTable 
+      v-if="filteredAndSortedProjects.length > 0" 
       :projects="filteredAndSortedProjects" 
       @deleteProject="confirmDeleteProject"
       :goToProjectDetails="goToProjectDetails" 
     />
+
+    <p v-else class="no-projects">Add Your First Project!</p>
 
     <Modal 
       v-if="isModalOpen" 
@@ -144,6 +147,13 @@ function goToProjectDetails(projectId: number) {
     font-weight: 400;
     letter-spacing: 1px;
     text-transform: uppercase;
+  }
+
+  .no-projects {
+    text-align: center;
+    font-size: 18px;
+    color: #666;
+    margin-top: 20px;
   }
 }
 
