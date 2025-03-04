@@ -5,76 +5,45 @@
       <button @click="openModal" class="add-button">+ Add New Project</button>
     </div>
 
-    <div class="controls">
-      <input type="text" v-model="filters.name" placeholder="Search by name..." class="search-input" />
-      <select v-model="filters.status" class="status-select">
-        <option value="">All Statuses</option>
-        <option v-for="status in projectStatuses" :key="status" :value="status">
-          {{ status }}
-        </option>
-      </select>
-    </div>
+    <ProjectFilters v-model:filters="filters" />
 
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th v-for="column in columns" :key="column.field" @click="sortBy(column.field)"
-              @mouseover="hoveredColumn = column.field" @mouseleave="hoveredColumn = null"
-              :title="getTooltip(column.field)" :style="{ width: column.width + 'px' }" class="resizable-header">
-              <span>{{ column.label }}</span>
-              <span class="sort-indicator">
-                {{ sortField === column.field ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
-              </span>
-              <span class="resize-handle" @mousedown="startResize($event, column)"></span>
-            </th>
-          </tr>
-        </thead>
+    <ProjectTable 
+      :projects="filteredAndSortedProjects" 
+      @deleteProject="confirmDeleteProject"
+      :goToProjectDetails="goToProjectDetails" 
+    />
 
-        <tbody>
-          <tr v-for="project in filteredAndSortedProjects" :key="project.id" @click="goToProjectDetails(project.id)">
-            <td>{{ project.id }}</td>
-            <td>{{ project.name }}</td>
-            <td>{{ project.tasksCount }}</td>
-            <td>{{ project.status }}</td>
-            <td>{{ formatDate(project.createdAt) }}</td>
-            <td>
-              <button @click.stop="confirmDeleteProject(project.id)" class="delete-button">Delete</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <Modal v-if="isModalOpen" :modalType="'project'" :closeModal="closeModal" :onSubmit="addProject"
-      :existingProjects="existingProjects" :existingTasks="existingTasks" />
+    <Modal 
+      v-if="isModalOpen" 
+      :modalType="'project'" 
+      :closeModal="closeModal" 
+      :onSubmit="addProject"
+      :existingProjects="existingProjects" 
+      :existingTasks="existingTasks" 
+    />
 
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useProjectsStore } from '@/stores/projects';
 import { useTasksStore } from '@/stores/tasks';
-import type { ProjectStatus } from '@/types/types';
 import { type Project } from '@/types/Project';
+
 import Modal from '@/components/Modal.vue';
+import ProjectFilters from '@/components/ProjectFilters.vue';
+import ProjectTable from '@/components/ProjectTable.vue';
 
 const router = useRouter();
 const projectsStore = useProjectsStore();
 const tasksStore = useTasksStore();
 
-const filters = ref({ name: '', status: '' });
+const filters = ref<{ name: string; status: string }>({ name: '', status: '' });
 const sortField = ref<string | null>(null);
 const sortOrder = ref<'asc' | 'desc'>('asc');
 const isModalOpen = ref(false);
-
-const resizingColumn = ref<any>(null);
-const startX = ref(0);
-const hoveredColumn = ref<string | null>(null);
-
-const projectStatuses: ProjectStatus[] = ['Active', 'Completed'];
 
 const existingProjects = computed(() => projectsStore.projects);
 const existingTasks = computed(() => tasksStore.tasks);
@@ -91,20 +60,22 @@ const projectsWithTaskCounts = computed(() => {
   });
 });
 
-onMounted(() => {
-  projectsStore.fetchProjects();
-  tasksStore.loadFromLocalStorage();
-});
-
-function confirmDeleteProject(projectId: number) {
-  if (confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
-    deleteProject(projectId);
+function loadFiltersFromLocalStorage() {
+  const savedFilters = localStorage.getItem('filters');
+  if (savedFilters) {
+    filters.value = JSON.parse(savedFilters);
   }
 }
 
-async function deleteProject(projectId: number) {
-  await projectsStore.removeProject(projectId);
-}
+watch(filters, (newFilters) => {
+  localStorage.setItem('filters', JSON.stringify(newFilters));
+}, { deep: true });
+
+onMounted(() => {
+  projectsStore.fetchProjects();
+  tasksStore.loadFromLocalStorage();
+  loadFiltersFromLocalStorage();
+});
 
 function openModal() {
   isModalOpen.value = true;
@@ -116,23 +87,15 @@ function addProject(newProject: Project) {
   projectsStore.addProject(newProject);
 }
 
-function getTooltip(field: string): string {
-  if (sortField.value === field) {
-    return sortOrder.value === 'asc'
-      ? `Click to sort by ${field} descending`
-      : `Click to reset sorting`;
+function confirmDeleteProject(projectId: number) {
+  if (confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+    deleteProject(projectId);
   }
-  return `Click to sort by ${field} ascending`;
 }
 
-const columns = ref([
-  { label: 'ID', field: 'id', width: 100 },
-  { label: 'Name', field: 'name', width: 200 },
-  { label: 'Tasks Count', field: 'tasksCount', width: 150 },
-  { label: 'Status', field: 'status', width: 150 },
-  { label: 'Created At', field: 'createdAt', width: 200 },
-  { label: 'Actions', field: 'actions', width: 100 },
-]);
+async function deleteProject(projectId: number) {
+  await projectsStore.removeProject(projectId);
+}
 
 const filteredAndSortedProjects = computed(() => {
   let projects = [...projectsWithTaskCounts.value];
@@ -142,6 +105,7 @@ const filteredAndSortedProjects = computed(() => {
       project.name.toLowerCase().includes(filters.value.name.toLowerCase())
     );
   }
+
   if (filters.value.status) {
     projects = projects.filter((project) => project.status === filters.value.status);
   }
@@ -160,50 +124,12 @@ const filteredAndSortedProjects = computed(() => {
   return projects;
 });
 
-function sortBy(field: string) {
-  if (sortField.value === field) {
-    if (sortOrder.value === 'asc') {
-      sortOrder.value = 'desc';
-    } else if (sortOrder.value === 'desc') {
-      sortField.value = null;
-      sortOrder.value = 'asc';
-    }
-  } else {
-    sortField.value = field;
-    sortOrder.value = 'asc';
-  }
-}
-
-
 function goToProjectDetails(projectId: number) {
   router.push({ name: 'ProjectDetails', params: { id: projectId } });
 }
-
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString();
-}
-
-function startResize(event: MouseEvent, column: any) {
-  resizingColumn.value = column;
-  startX.value = event.clientX;
-  document.addEventListener('mousemove', resizeColumn);
-  document.addEventListener('mouseup', stopResize);
-}
-function resizeColumn(event: MouseEvent) {
-  if (resizingColumn.value) {
-    const deltaX = event.clientX - startX.value;
-    startX.value = event.clientX;
-    resizingColumn.value.width += deltaX;
-  }
-}
-function stopResize() {
-  document.removeEventListener('mousemove', resizeColumn);
-  document.removeEventListener('mouseup', stopResize);
-  resizingColumn.value = null;
-}
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .projects-page {
   padding: 16px;
 
@@ -221,53 +147,6 @@ function stopResize() {
   }
 }
 
-.controls {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.search-input,
-.status-select,
-.add-button {
-  padding: 8px;
-}
-
-.table-container {
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  border: 1px solid #ccc;
-  padding: 8px;
-  position: relative;
-  cursor: pointer;
-}
-
-th {
-  text-align: center;
-}
-
-.resizable-header {
-  cursor: pointer;
-  user-select: none;
-}
-
-.resize-handle {
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: 5px;
-  height: 100%;
-  cursor: ew-resize;
-}
-
 .add-button {
   background: #635FC7;
   color: #fff;
@@ -280,20 +159,5 @@ th {
 
 .add-button:hover {
   background: #A8A4FF;
-}
-
-.delete-button {
-  width: 100%;
-  background: #EA5555;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  border: none;
-  font-size: 12px;
-}
-
-.delete-button:hover {
-  background: #c0392b;
 }
 </style>
