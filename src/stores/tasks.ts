@@ -27,7 +27,19 @@ export const useTasksStore = defineStore('tasks', {
 
     async fetchTasks(projectId: number) {
       try {
-        this.tasks = await getTasksByProject(projectId)
+        const apiTasks = await getTasksByProject(projectId)
+        this.loadFromLocalStorage()
+
+        const localTasks = this.tasks.filter((task) => task.projectId === projectId)
+        const mergedTasks = [...apiTasks]
+
+        localTasks.forEach((localTask) => {
+          if (!mergedTasks.some((apiTask) => apiTask.id === localTask.id)) {
+            mergedTasks.push(localTask)
+          }
+        })
+
+        this.tasks = mergedTasks
         this.saveTasks()
       } catch (error) {
         console.error('Failed to fetch tasks', error)
